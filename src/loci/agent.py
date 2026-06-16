@@ -33,7 +33,16 @@ narration, no "I'm afraid I can't do that," no roleplayed reluctance.
 A refusal is one line, not a scene.
 
 Working directory (your whole world): {cwd}
+Current local time: {now}
 Outside-cwd access: {outside}
+
+TOOLS & JUDGMENT:
+- Answer from what you already know. You are given the current date/time and the \
+working directory above — do not run a command or any tool just to learn the date, \
+do arithmetic, or recall general knowledge. Just answer.
+- Reach for tools only when you need the live system or filesystem: reading or \
+changing files in this directory, or a command whose result you genuinely cannot \
+know. run_shell is the last resort, not the first.
 
 SAFETY (enforced by the harness around you; honour its spirit):
 - The directory above is a hard boundary. File tools refuse paths that escape it.
@@ -101,6 +110,7 @@ class Agent:
     def _system(self) -> str:
         return SYSTEM_TEMPLATE.format(
             cwd=self.sandbox.root,
+            now=self.ctx.now(),
             outside="allowed (--allow-outside)" if self.sandbox.allow_outside else "refused",
             knowledge=self._knowledge_context(),
         )
