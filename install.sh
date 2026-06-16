@@ -90,6 +90,9 @@ run_spun() { # $1 label, rest: command
 py_ge_311() { "$1" -c 'import sys; raise SystemExit(0 if sys.version_info[:2] >= (3,11) else 1)' 2>/dev/null; }
 
 # --- run --------------------------------------------------------------------
+DEV=0
+[ "${1:-}" = "--dev" ] && DEV=1   # editable install for development
+
 banner
 rule "checks"
 
@@ -99,29 +102,55 @@ else
   bad "zsh not found — loci's // hook needs zsh"
 fi
 
+# A python >=3.11 (for the pip fallback / reporting). pipx brings its own, so
+# this is not required when pipx is present.
 PYTHON=
 for c in python3.13 python3.12 python3.11 python3 python; do
   command -v "$c" >/dev/null 2>&1 || continue
   if py_ge_311 "$c"; then PYTHON=$(command -v "$c"); break; fi
 done
-if [ -n "$PYTHON" ]; then
+
+HAVE_PIPX=0
+command -v pipx >/dev/null 2>&1 && HAVE_PIPX=1
+
+if [ "$HAVE_PIPX" = 1 ]; then
+  ok "pipx found ($(pipx --version 2>/dev/null))"
+elif [ -n "$PYTHON" ]; then
   ok "Python ≥3.11 found ($("$PYTHON" -c 'import sys;print("%d.%d"%sys.version_info[:2])'))"
 else
-  bad "Python ≥3.11 not found — please install it and re-run"
+  bad "need pipx or Python ≥3.11 (your system python is too old)"
+  info "recommended:  brew install pipx && pipx ensurepath"
+  info "or install a modern python:  brew install python@3.12"
   exit 1
 fi
 
 rule "install"
-if run_spun "installing loci onto your PATH" "$PYTHON" -m pip install --user "$SCRIPT_DIR"; then
+INSTALL_OK=0
+if [ "$HAVE_PIPX" = 1 ]; then
+  # pipx: isolated venv, modern pip, loci on PATH. --force makes it idempotent.
+  if [ "$DEV" = 1 ]; then
+    run_spun "installing loci (editable, pipx)" pipx install --force --editable "$SCRIPT_DIR" && INSTALL_OK=1
+  else
+    run_spun "installing loci (pipx)" pipx install --force "$SCRIPT_DIR" && INSTALL_OK=1
+  fi
+  BIN_DIR="${PIPX_BIN_DIR:-$HOME/.local/bin}"
+else
+  if [ "$DEV" = 1 ]; then
+    run_spun "installing loci (editable)" "$PYTHON" -m pip install --user --editable "$SCRIPT_DIR" && INSTALL_OK=1
+  else
+    run_spun "installing loci" "$PYTHON" -m pip install --user "$SCRIPT_DIR" && INSTALL_OK=1
+  fi
+  BIN_DIR="$("$PYTHON" -m site --user-base 2>/dev/null)/bin"
+fi
+if [ "$INSTALL_OK" = 1 ]; then
   ok "loci installed"
 else
-  bad "pip install failed"; cat "$LOG"; exit 1
+  bad "install failed"; cat "$LOG"; exit 1
 fi
 
-USER_BIN="$("$PYTHON" -m site --user-base 2>/dev/null)/bin"
 case ":$PATH:" in
-  *":$USER_BIN:"*) : ;;
-  *) info "add to PATH:  export PATH=\"$USER_BIN:\$PATH\"" ;;
+  *":$BIN_DIR:"*) : ;;
+  *) info "add to PATH:  export PATH=\"$BIN_DIR:\$PATH\"  (pipx ensurepath does this)" ;;
 esac
 
 CONFIG_DIR=${XDG_CONFIG_HOME:-$HOME/.config}/loci

@@ -32,15 +32,22 @@ Both forms share one session thread per terminal window.
 
 ## Install
 
+[pipx](https://pipx.pypa.io) is the recommended installer — it brings its own
+modern Python, installs loci in an isolated environment, and puts it on your
+PATH. (macOS note: do not rely on the system `/usr/bin/python3`; it ships an old
+pip and a Python below loci's floor.)
+
 ```sh
+brew install pipx && pipx ensurepath     # once; or: python3 -m pip install --user pipx
 git clone <your-fork> loci && cd loci
 ./install.sh
 ```
 
-The installer (TokyoNight, zero-dependency) detects zsh and Python ≥3.11,
+The installer (TokyoNight, zero-dependency) detects pipx (or a Python ≥3.11),
 installs `loci` onto your PATH, adds a small fenced hook to your `.zshrc`, and
 checks for your API key. It honours `NO_COLOR` and non-interactive shells, and it
-never writes your key anywhere.
+never writes your key anywhere. Without pipx it falls back to `pip install --user`
+against a Python ≥3.11.
 
 Then, in a new shell:
 
@@ -53,7 +60,7 @@ loci onboard                            # consent, defaults, and a live key chec
 ### Requirements
 
 - zsh (the `//` hook is a zsh ZLE widget)
-- Python 3.11+
+- pipx (recommended), or a Python 3.11+ on your PATH
 - An Anthropic API key in `ANTHROPIC_API_KEY`
 
 ## Configuration
@@ -121,6 +128,15 @@ validates them, runs them through the safety model, returns `tool_result` blocks
 and loops until the turn ends. Text is streamed as it arrives.
 
 ## Development
+
+Install editable so your edits apply without reinstalling:
+
+```sh
+./install.sh --dev                       # pipx editable install + the zsh hook
+# or directly:  pipx install --editable .
+```
+
+Run the tests (no SDK or network needed):
 
 ```sh
 PYTHONPATH=src python3 -m unittest discover -s tests
