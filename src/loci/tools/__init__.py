@@ -58,6 +58,33 @@ REGISTRY = {t.name: t for t in [
             "required": ["path"],
         },
     }),
+    Tool("find_files", READ, fs.find_files, {
+        "name": "find_files",
+        "description": "Find files by name glob (e.g. '*.py') recursively within the "
+                       "working directory. Skips .git/__pycache__/node_modules/etc.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pattern": {"type": "string", "description": "Filename glob, e.g. '*.py'. Default '*'."},
+                "subdir": {"type": "string", "description": "Subdirectory to search, default '.'"},
+            },
+        },
+    }),
+    Tool("search_text", READ, fs.search_text, {
+        "name": "search_text",
+        "description": "Search file contents with a regex (grep-style) within the "
+                       "working directory. Returns path:line: text. Read-only.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pattern": {"type": "string", "description": "Python regular expression."},
+                "subdir": {"type": "string", "description": "Subdirectory to search, default '.'"},
+                "glob": {"type": "string", "description": "Optional filename glob filter, e.g. '*.py'."},
+                "ignore_case": {"type": "boolean"},
+            },
+            "required": ["pattern"],
+        },
+    }),
     Tool("make_dir", BENIGN, fs.make_dir, {
         "name": "make_dir",
         "description": "Create a directory (and parents) within the working directory.",
@@ -80,6 +107,22 @@ REGISTRY = {t.name: t for t in [
             "required": ["path", "content"],
         },
     }, plan_row=fs.plan_write),
+    Tool("edit_file", DESTRUCTIVE, fs.edit_file, {
+        "name": "edit_file",
+        "description": "Replace text in an existing file (read it first). `old` must "
+                       "be unique unless replace_all is set. Prefer this over "
+                       "write_file for surgical changes.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string"},
+                "old": {"type": "string", "description": "Exact text to replace."},
+                "new": {"type": "string", "description": "Replacement text."},
+                "replace_all": {"type": "boolean", "description": "Replace every occurrence."},
+            },
+            "required": ["path", "old", "new"],
+        },
+    }, plan_row=fs.plan_edit),
     Tool("rename_file", DESTRUCTIVE, fs.rename_file, {
         "name": "rename_file",
         "description": "Rename a file within the working directory.",
@@ -98,6 +141,16 @@ REGISTRY = {t.name: t for t in [
             "required": ["src", "dst"],
         },
     }, plan_row=fs.plan_move),
+    Tool("delete_file", DESTRUCTIVE, fs.delete_file, {
+        "name": "delete_file",
+        "description": "Delete a file within the working directory. Irreversible; "
+                       "gated like any destructive action.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"path": {"type": "string"}},
+            "required": ["path"],
+        },
+    }, plan_row=fs.plan_delete),
     Tool("run_shell", EXEC, shell.run_shell, {
         "name": "run_shell",
         "description": "Run a shell command in the working directory. The exact "
