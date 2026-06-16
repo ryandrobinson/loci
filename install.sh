@@ -22,25 +22,44 @@ bad()  { printf '  %b✗%b %s\n' "$RED" "$RST" "$1"; }
 info() { printf '  %b·%b %s\n' "$DIM" "$RST" "$1"; }
 rule() { printf '%b── %s %b\n' "$BLUE" "$1" "$RST"; }
 
+# Wordmark — figlet "ANSI Shadow". Single source; the colour pass (the shared
+# izakaya/Athena per-char gradient) is done by Python when available, else plain.
+ART='██╗      ██████╗  ██████╗██╗
+██║     ██╔═══██╗██╔════╝██║
+██║     ██║   ██║██║     ██║
+██║     ██║   ██║██║     ██║
+███████╗╚██████╔╝╚██████╗██║
+╚══════╝ ╚═════╝  ╚═════╝╚═╝'
+TAGLINE='✦ the genius of the place · summon with //'
+
 banner() {
-  # cyan -> blue -> purple, line by line
-  set -- "$CYAN" "$CYAN" "$BLUE" "$PURPLE" "$PURPLE"
-  i=1
   printf '\n'
-  IFS='
-'
-  for line in \
-' _            _' \
-'| | ___   ___(_)' \
-'| |/ _ \ / __| |' \
-'| | (_) | (__| |' \
-'|_|\___/ \___|_|'; do
-    eval "c=\${$i}"
-    printf '%b%s%b\n' "$c" "$line" "$RST"
-    i=$((i+1))
-  done
-  unset IFS
-  printf '%bthe genius of the place · summon with //%b\n\n' "$DIM" "$RST"
+  BPY=
+  for c in python3 python; do command -v "$c" >/dev/null 2>&1 && { BPY=$c; break; }; done
+  if [ "$TTY" = 1 ] && [ -n "$BPY" ]; then
+    LOCI_ART="$ART" LOCI_TAG="$TAGLINE" "$BPY" <<'PY'
+import os
+ART = os.environ["LOCI_ART"]; TAG = os.environ["LOCI_TAG"]
+STOPS = [(122,162,247),(125,207,255),(187,154,247),(115,218,202),(158,206,106),(247,118,142)]
+def g(p):
+    x = ((p % 1) + 1) % 1; s = x * (len(STOPS) - 1)
+    i = min(len(STOPS) - 2, int(s)); t = s - i
+    a, b = STOPS[i], STOPS[i + 1]
+    return tuple(round(a[k] + (b[k] - a[k]) * t) for k in range(3))
+for r, line in enumerate(ART.split("\n")):
+    n = max(len(line), 1); out = []
+    for i, ch in enumerate(line):
+        if ch == " ": out.append(" ")
+        else:
+            c = g((i / n) * 0.9 + r * 0.07)
+            out.append("\033[38;2;%d;%d;%dm%s" % (c[0], c[1], c[2], ch))
+    out.append("\033[0m"); print("".join(out))
+print("\033[38;2;86;95;137m" + TAG + "\033[0m")
+PY
+  else
+    printf '%s\n%b%s%b\n' "$ART" "$DIM" "$TAGLINE" "$RST"
+  fi
+  printf '\n'
 }
 
 spinner() { # $1 = pid, $2 = label

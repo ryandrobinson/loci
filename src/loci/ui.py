@@ -10,7 +10,7 @@ import os
 import sys
 
 # TokyoNight palette (hex -> RGB).
-GROUND = (0x1a, 0x1b, 0x26)
+GROUND = (0x16, 0x16, 0x1e)   # #16161e night
 CYAN = (0x7d, 0xcf, 0xff)
 BLUE = (0x7a, 0xa2, 0xf7)
 PURPLE = (0xbb, 0x9a, 0xf7)
@@ -18,16 +18,29 @@ GREEN = (0x9e, 0xce, 0x6a)
 RED = (0xf7, 0x76, 0x8e)
 DIM = (0x56, 0x5f, 0x89)
 
-# The loci wordmark (figlet "standard").
+# The shared brand gradient (izakaya / Athena): a per-character flow through six
+# TokyoNight stops — blue -> cyan -> purple -> teal -> green -> pink — with a
+# per-row phase offset so the colour waves down the wordmark.
+STOPS = [
+    (122, 162, 247),  # #7aa2f7 blue
+    (125, 207, 255),  # #7dcfff cyan
+    (187, 154, 247),  # #bb9af7 purple
+    (115, 218, 202),  # #73daca teal
+    (158, 206, 106),  # #9ece6a green
+    (247, 118, 142),  # #f7768e pink
+]
+
+# The loci wordmark — figlet "ANSI Shadow".
 WORDMARK = r"""
- _            _
-| | ___   ___(_)
-| |/ _ \ / __| |
-| | (_) | (__| |
-|_|\___/ \___|_|
+██╗      ██████╗  ██████╗██╗
+██║     ██╔═══██╗██╔════╝██║
+██║     ██║   ██║██║     ██║
+██║     ██║   ██║██║     ██║
+███████╗╚██████╔╝╚██████╗██║
+╚══════╝ ╚═════╝  ╚═════╝╚═╝
 """
 
-TAGLINE = "the genius of the place · summon with //"
+TAGLINE = "✦ the genius of the place · summon with //"
 
 
 def color_enabled(stream=None) -> bool:
@@ -65,25 +78,31 @@ class UI:
 
     # -- elements ----------------------------------------------------------- #
 
-    def _gradient_stops(self, t: float):
-        """Three-stop cyan -> blue -> purple interpolation, t in [0, 1]."""
-        if t < 0.5:
-            a, b, u = CYAN, BLUE, t / 0.5
-        else:
-            a, b, u = BLUE, PURPLE, (t - 0.5) / 0.5
-        return tuple(round(a[i] + (b[i] - a[i]) * u) for i in range(3))
+    @staticmethod
+    def _grad(p: float):
+        """Brand gradient: map p to an RGB along STOPS (five clamped segments,
+        p wrapped into [0,1)). Identical recipe to the izakaya/Athena banners."""
+        x = ((p % 1) + 1) % 1
+        seg = x * (len(STOPS) - 1)
+        i = min(len(STOPS) - 2, int(seg))
+        t = seg - i
+        a, b = STOPS[i], STOPS[i + 1]
+        return tuple(round(a[k] + (b[k] - a[k]) * t) for k in range(3))
 
     def banner(self) -> None:
         lines = WORDMARK.strip("\n").splitlines()
-        width = max(len(l) for l in lines)
-        for row in lines:
+        for row, line in enumerate(lines):
             if not self.color:
-                self.line(row)
+                self.line(line)
                 continue
+            n = max(len(line), 1)
             out = []
-            for col, ch in enumerate(row):
-                rgb = self._gradient_stops(col / max(width - 1, 1))
-                out.append(self.paint(ch, rgb))
+            for i, ch in enumerate(line):
+                if ch == " ":
+                    out.append(" ")
+                else:
+                    out.append(self._fg(self._grad((i / n) * 0.9 + row * 0.07)) + ch)
+            out.append(self._reset())
             self.line("".join(out))
         self.line(self.paint(TAGLINE, DIM))
 
