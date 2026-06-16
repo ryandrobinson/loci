@@ -2,7 +2,7 @@
 type: project
 title: loci
 description: An ambient AI agent summoned from zsh with // and powered by Claude.
-resource: "https://example.com/loci"
+resource: "https://github.com/vajramatt/loci"
 tags:
   - cli
   - agent

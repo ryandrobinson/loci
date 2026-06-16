@@ -16,8 +16,8 @@ keywords = ["cli", "agent", "anthropic", "claude", "zsh", "okf"]
 dependencies = ["anthropic>=0.40"]
 
 [project.urls]
-Homepage = "https://example.com/loci"
-Source = "https://example.com/loci"
+Homepage = "https://github.com/vajramatt/loci"
+Source = "https://github.com/vajramatt/loci"
 
 [project.scripts]
 loci = "loci.cli:main"
