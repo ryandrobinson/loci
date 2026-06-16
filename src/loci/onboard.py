@@ -52,9 +52,14 @@ def run_onboard(cfg: dict, opts: dict) -> int:
     # 2. Defaults --------------------------------------------------------- #
     ui.line("")
     ui.rule("defaults")
-    model = _ask(ui, f"Model [{cfg.get('model', config.DEFAULT_MODEL)}]: ")
+    current_model = cfg.get("model", config.DEFAULT_MODEL)
+    model = _ask(ui, f"Model (Enter to keep {current_model}): ")
     if model:
-        cfg["model"] = model
+        # Guard against fat-fingering a non-model answer into the model slot.
+        if model.startswith("claude"):
+            cfg["model"] = model
+        else:
+            ui.warn(f'"{model}" is not a model id — keeping {current_model}')
     verbosity = _ask(ui, f"Verbosity quiet/normal/verbose [{cfg.get('verbosity','normal')}]: ")
     if verbosity in ("quiet", "normal", "verbose"):
         cfg["verbosity"] = verbosity
@@ -72,7 +77,7 @@ def run_onboard(cfg: dict, opts: dict) -> int:
         ui.info("Set the key, then run a first turn:  // say hello")
         return 1
 
-    ui.info("running a tiny live turn to verify your key…")
+    ui.info(f"running a tiny live turn (model {cfg.get('model')}) to verify your key…")
     try:
         from .agent import Agent
         from .memory.session import Session
@@ -84,8 +89,11 @@ def run_onboard(cfg: dict, opts: dict) -> int:
     except MissingKeyError as e:
         ui.fail(str(e))
         return 1
-    except Exception as e:  # network/SDK error — report, don't crash onboarding
-        ui.fail(f"could not reach the API: {e}")
+    except Exception as e:  # SDK/API error — report, don't crash onboarding
+        ui.fail(f"the test turn failed: {e}")
+        if "not_found" in str(e) and "model" in str(e):
+            ui.info(f"the model id {cfg.get('model')!r} was rejected — "
+                    "re-run `loci onboard` and press Enter to keep the default.")
         return 1
 
     ui.line("")
