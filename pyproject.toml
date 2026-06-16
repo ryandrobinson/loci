@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "loci"
+version = "0.1.0"
+description = "The genius of the place — an ambient AI agent you summon from your shell with //"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "YOUR NAME", email = "you@example.com" }]
+keywords = ["cli", "agent", "anthropic", "claude", "zsh", "okf"]
+
+# Minimal by design: the standard library plus the official Anthropic SDK.
+dependencies = ["anthropic>=0.40"]
+
+[project.urls]
+Homepage = "https://example.com/loci"
+Source = "https://example.com/loci"
+
+[project.scripts]
+loci = "loci.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

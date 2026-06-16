@@ -1,0 +1,22 @@
+# Secrets — never commit a key
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+.venv/
+venv/
+
+# Local state / cache (loci uses XDG dirs, but ignore stray copies)
+state/
+cache/
+
+# OS
+.DS_Store
+
+# Local tooling config (not part of the project)
+.claude/
