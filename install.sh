@@ -183,4 +183,5 @@ printf '%b│%b  1. open a new terminal (or: %bsource %s%b)\n' "$BLUE" "$RST" "$
 printf '%b│%b  2. set your key:  %bexport LOCI_ANTHROPIC_KEY="sk-ant-..."%b\n' "$BLUE" "$RST" "$CYAN" "$RST"
 printf '%b│%b  3. run setup:     %bloci onboard%b\n' "$BLUE" "$RST" "$CYAN" "$RST"
 printf '%b│%b  4. summon it:     %b// list this directory and suggest a .gitignore%b\n' "$BLUE" "$RST" "$CYAN" "$RST"
+printf '%b│%b  %bloci runs commands and changes files — use at your own risk (see README Disclaimer).%b\n' "$BLUE" "$RST" "$DIM" "$RST"
 printf '%b└%b  %bthe genius of the place is yours.%b\n\n' "$BLUE" "$RST" "$DIM" "$RST"

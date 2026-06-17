@@ -3,6 +3,14 @@
 This repo is **public from commit one**. No secrets, no personal paths, no
 machine-specific config. Write code people will read.
 
+## Disclaimer
+
+loci is provided **AS IS**, without warranty, with no liability on the authors —
+see the [LICENSE](LICENSE) and the README Disclaimer. It runs shell commands and
+modifies files, so the "use at your own risk" framing is load-bearing: do not
+soften or remove the README warning, the onboarding consent, or the safety
+invariants below, and keep that framing intact in anything user-facing you add.
+
 ## What loci is
 
 An ambient agent summoned from zsh with `//`, running the Anthropic Messages API
