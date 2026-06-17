@@ -15,7 +15,7 @@ from . import config, safety
 from .memory.okf import Bundle
 from .memory.session import Session
 from .sandbox import Sandbox
-from .tools import DESTRUCTIVE, EXEC, READ, BENIGN, get, schemas
+from .tools import DESTRUCTIVE, EXEC, READ, BENIGN, NET, get, schemas
 from .tools.base import ToolContext, ToolError
 from .ui import UI
 
@@ -43,7 +43,7 @@ do arithmetic, or recall general knowledge. Just answer.
 - Reach for tools only when you need the live system or filesystem: reading or \
 changing files in this directory, or a command whose result you genuinely cannot \
 know. run_shell is the last resort, not the first.
-
+{web}
 DIRECTORY (read carefully):
 - Each // turn runs in the directory shown above and tagged on the latest user \
 message as "[cwd: …]". This can DIFFER from earlier turns in the same conversation: \
@@ -120,10 +120,15 @@ class Agent:
         return "\n\n".join(parts) if parts else "(No knowledge bundles yet.)"
 
     def _system(self) -> str:
+        web = ("- web_fetch returns the readable plain text of an http/https page "
+               "(rendered by w3m, no JavaScript). Reach for it when the user gives a "
+               "URL or asks you to read or summarise a web page; it is read-only."
+               if self.cfg.get("web_fetch_enabled", False) else "")
         return SYSTEM_TEMPLATE.format(
             cwd=self.sandbox.root,
             now=self.ctx.now(),
             outside="allowed (--allow-outside)" if self.sandbox.allow_outside else "refused",
+            web=web,
             knowledge=self._knowledge_context(),
         )
 
@@ -138,7 +143,8 @@ class Agent:
         # folder changes — otherwise the model conflates "this directory" across
         # turns that ran in different places.
         messages.append({"role": "user", "content": f"[cwd: {self.sandbox.root}]\n{request}"})
-        tools = schemas(self.cfg.get("run_shell_enabled", False))
+        tools = schemas(self.cfg.get("run_shell_enabled", False),
+                        self.cfg.get("web_fetch_enabled", False))
 
         while True:
             blocks = client_mod.stream_assistant(
@@ -174,6 +180,15 @@ class Agent:
         tool = get(tu["name"])
         inp = tu.get("input", {}) or {}
 
+        # web_fetch: gated by consent, shown before each call, but never y/N'd
+        # (read-only). The refusal applies even under --dry-run.
+        if tool.klass == NET:
+            if not self.cfg.get("web_fetch_enabled", False):
+                return self._result(tu, "web_fetch is disabled. Enable it with "
+                                        "`loci onboard`.", is_error=True)
+            self.ui.line("")
+            self.ui.info(f"→ fetching {inp.get('url','')}")
+
         # Confirmation gating (skipped entirely under --dry-run).
         if not self.dry_run:
             if tool.klass == EXEC:
@@ -201,7 +216,9 @@ class Agent:
         # Execute.
         try:
             output = tool.handler(self.ctx, **inp)
-            if tool.klass in (DESTRUCTIVE, BENIGN, EXEC):
+            if tool.klass == NET:
+                self.ui.ok(f"fetched ({len(output)} chars)")
+            elif tool.klass in (DESTRUCTIVE, BENIGN, EXEC):
                 self.ui.ok(output.splitlines()[0])
             return self._result(tu, output, is_error=False)
         except ToolError as e:

@@ -52,6 +52,21 @@ def run_onboard(cfg: dict, opts: dict) -> int:
     else:
         ui.info("run_shell left disabled. Re-run `loci onboard` to change this.")
 
+    # 1b. Web fetch consent ---------------------------------------------- #
+    ui.line("")
+    ui.panel("web access", [
+        "web_fetch lets loci read http/https pages (rendered to text by w3m, no",
+        "JavaScript). It is read-only and reaches the open network, so it is OFF",
+        "until you opt in. Each fetch shows the URL before it runs. Needs w3m on",
+        "your PATH (e.g. `brew install w3m`).",
+    ])
+    ans = _ask(ui, 'Type "yes" to enable web_fetch (anything else keeps it off): ')
+    cfg["web_fetch_enabled"] = (ans.strip().lower() == "yes")
+    if cfg["web_fetch_enabled"]:
+        ui.ok("web_fetch enabled. loci shows each URL before fetching it.")
+    else:
+        ui.info("web_fetch left disabled. Re-run `loci onboard` to change this.")
+
     # 2. Defaults --------------------------------------------------------- #
     ui.line("")
     ui.rule("defaults")

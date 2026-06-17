@@ -10,6 +10,8 @@ Safety classes:
   destructive— inline y/N, or one y/N for a shown batch (write/rename/move,
                knowledge_write)
   exec       — always shown, always waits; off until consented (run_shell)
+  net        — read-only network fetch; shown before each call, no y/N; off until
+               consented (web_fetch)
 """
 
 from __future__ import annotations
@@ -17,10 +19,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from . import fs, knowledge, shell
+from . import fs, knowledge, shell, web
 from .base import ToolContext, ToolError
 
-READ, BENIGN, DESTRUCTIVE, EXEC = "read", "benign", "destructive", "exec"
+READ, BENIGN, DESTRUCTIVE, EXEC, NET = "read", "benign", "destructive", "exec", "net"
 
 
 @dataclass
@@ -161,6 +163,20 @@ REGISTRY = {t.name: t for t in [
             "required": ["command"],
         },
     }, plan_row=shell.plan_shell),
+    Tool("web_fetch", NET, web.web_fetch, {
+        "name": "web_fetch",
+        "description": "Fetch the readable text of an http(s) web page, rendered to "
+                       "plain text with w3m (no JavaScript). Use this when the user "
+                       "gives you a URL or asks you to read/summarise a page. "
+                       "Read-only — it never changes anything.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string", "description": "An http:// or https:// URL."},
+            },
+            "required": ["url"],
+        },
+    }),
     Tool("knowledge_index", READ, knowledge.knowledge_index, {
         "name": "knowledge_index",
         "description": "Read the index of an OKF knowledge bundle (progressive "
@@ -204,11 +220,14 @@ REGISTRY = {t.name: t for t in [
 ]}
 
 
-def schemas(run_shell_enabled: bool):
-    """The tool schemas to advertise to the API. run_shell is hidden unless on."""
+def schemas(run_shell_enabled: bool, web_fetch_enabled: bool = False):
+    """The tool schemas to advertise to the API. run_shell and web_fetch are each
+    hidden unless their capability is enabled in config."""
     out = []
     for tool in REGISTRY.values():
         if tool.klass == EXEC and not run_shell_enabled:
+            continue
+        if tool.klass == NET and not web_fetch_enabled:
             continue
         out.append(tool.schema)
     return out

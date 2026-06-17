@@ -56,6 +56,7 @@ def config_path() -> Path:
 DEFAULTS = {
     "model": DEFAULT_MODEL,
     "run_shell_enabled": False,
+    "web_fetch_enabled": False,     # read-only http(s) fetch via w3m; off until consent
     "verbosity": "normal",          # "quiet" | "normal" | "verbose"
     "consented": False,             # safety acknowledgement recorded
     "session_token_budget": DEFAULT_SESSION_TOKEN_BUDGET,

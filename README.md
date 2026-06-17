@@ -54,11 +54,13 @@ Summon it any time with **`// help`** (instant, no API call). It prints:
   read    list_files · read_file · find_files · search_text
   write   write_file · edit_file · make_dir · rename/move/delete_file
   shell   run_shell — off until you enable it in `loci onboard`
+  web     web_fetch — read a URL with w3m; off until you enable it
   memory  reads & writes OKF knowledge in ./.loci and the global bundle
 ── safety ──
   • acts only inside the current directory (cwd boundary)
   • one y/N per destructive action; a shown plan + one y/N for batches
-  • run_shell shows the command first · --dry-run changes nothing
+  • run_shell shows the command first · web_fetch shows the URL first
+  • --dry-run changes nothing
 ── config ──
   key     LOCI_ANTHROPIC_KEY  (or ANTHROPIC_API_KEY)
   setup   loci onboard   ·   ~/.config/loci/config.json
@@ -97,6 +99,8 @@ loci onboard                            # consent, defaults, and a live key chec
 - zsh (the `//` hook is a zsh ZLE widget)
 - pipx (recommended), or a Python 3.11+ on your PATH
 - An Anthropic API key in `LOCI_ANTHROPIC_KEY` (or `ANTHROPIC_API_KEY` as a fallback)
+- Optional: [`w3m`](https://w3m.sourceforge.net/) on your PATH, only if you enable
+  `web_fetch` (e.g. `brew install w3m`)
 
 ## Configuration
 
@@ -106,6 +110,7 @@ loci onboard                            # consent, defaults, and a live key chec
 |----------------------|----------------------|------------------------------------------|
 | `model`              | `claude-sonnet-4-6`  | overridable to a stronger model          |
 | `run_shell_enabled`  | `false`              | the shell tool stays off until you opt in |
+| `web_fetch_enabled`  | `false`              | the web_fetch tool (reads URLs via w3m) stays off until you opt in |
 | `verbosity`          | `normal`             | `quiet` / `normal` / `verbose`           |
 
 Per-run flags: `--dry-run`, `--allow-outside`, `--model NAME`, `--no-color`,
@@ -128,6 +133,10 @@ enforced — these are invariants, not suggestions:
   then a single `y/N` for the whole batch. No silent batch mutations.
 - **`run_shell` always shows the exact command and waits.** It never
   auto-executes, and it is disabled until you consent during onboarding.
+- **`web_fetch` reaches the network only after you opt in.** It is disabled until
+  you consent during onboarding, only accepts `http`/`https` URLs (never
+  `file://`, so it cannot bypass the cwd boundary to read local files), is
+  read-only, and prints the URL before each fetch.
 - **`--dry-run` mutates nothing** and only prints intended actions.
 - **Confirms fail safe.** Anything but an explicit `yes` — including EOF — is a
   no.
